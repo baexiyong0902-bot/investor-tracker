@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Search, BookOpen, TrendingUp, Anchor, RefreshCw, ChevronRight, FileText, ExternalLink, User } from 'lucide-react';
+// 1. 适配浏览器环境的变量定义 (替代 import)
+const { useState, useEffect } = React;
+const { Search, BookOpen, TrendingUp, Anchor, RefreshCw, ChevronRight, FileText, ExternalLink, User } = lucide;
 
-const apiKey = ""; // 运行时自动注入
+// 这里是你原本定义的 apiKey，记得填入你的有效 Key 才能抓取新闻
+const apiKey = "AIzaSyAb6Cnm7dk44zOu_u6muglMw3iDIaGoYR4"; 
 
 const App = () => {
   const [loading, setLoading] = useState(false);
@@ -23,21 +25,19 @@ const App = () => {
     }
   };
 
-  // 获取新闻列表及内容
   const fetchNews = async (investorKey) => {
     setLoading(true);
     setError(null);
     setSelectedNews(null);
     const investor = investors[investorKey];
     
-    // 调整 Prompt：不再强制 Band 9，要求自然、清晰的专业英语
     const systemPrompt = `
       You are a financial news curator. 
       Task:
       1. Search for the 4 most recent and important news items about ${investor.name}.
       2. For each news item, provide:
          - A clear, concise Title.
-         - The main content in clear, natural professional English (avoid overly complex GRE/IELTS words, focus on clarity).
+         - The main content in clear, natural professional English.
          - The same content translated into natural, professional Chinese.
       3. Format the response as a JSON object:
          { "news": [ { "id": 1, "title": "...", "en": "...", "zh": "..." }, ... ] }
@@ -46,7 +46,8 @@ const App = () => {
     const userQuery = `Get the latest 4 news updates for ${investor.name}.`;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+      // 注意：这里使用了你代码中的 URL 和配置
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,19 +65,23 @@ const App = () => {
       setNewsList(result.news || []);
       if (result.news?.length > 0) setSelectedNews(result.news[0]);
     } catch (err) {
-      setError("无法获取最新动态，请稍后重试。");
+      setError("无法获取最新动态，请检查 API Key 或稍后重试。");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchNews(activeInvestor);
+    if(apiKey) {
+        fetchNews(activeInvestor);
+    } else {
+        setError("请在 App.js 中填入你的 Gemini API Key");
+    }
   }, [activeInvestor]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-slate-900">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <div className="bg-indigo-600 p-2 rounded-lg text-white">
@@ -100,7 +105,6 @@ const App = () => {
       </header>
 
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full">
-        {/* Sidebar: News List */}
         <aside className="w-full md:w-80 border-r border-gray-200 bg-white overflow-y-auto">
           <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Latest Updates</span>
@@ -116,6 +120,8 @@ const App = () => {
                   <div className="h-3 bg-gray-100 rounded w-1/2"></div>
                 </div>
               ))
+            ) : error ? (
+              <div className="p-4 text-xs text-red-500">{error}</div>
             ) : (
               newsList.map((item) => (
                 <button
@@ -135,7 +141,6 @@ const App = () => {
           </div>
         </aside>
 
-        {/* Main Content Area */}
         <main className="flex-1 bg-white overflow-y-auto">
           {selectedNews ? (
             <div className="p-6 md:p-12 max-w-3xl mx-auto">
@@ -150,8 +155,7 @@ const App = () => {
               </div>
 
               <div className="space-y-8">
-                {/* English Section */}
-                <div className="group">
+                <div>
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">English Original</span>
                   </div>
@@ -160,7 +164,6 @@ const App = () => {
                   </p>
                 </div>
 
-                {/* Chinese Section */}
                 <div className="group">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[10px] font-black bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded uppercase">中文翻译</span>
@@ -171,7 +174,6 @@ const App = () => {
                 </div>
               </div>
               
-              {/* Business Bridge */}
               <div className="mt-12 p-6 bg-slate-900 rounded-2xl text-white">
                 <div className="flex items-center gap-2 mb-3 text-indigo-400">
                   <Anchor size={18} />
@@ -192,7 +194,6 @@ const App = () => {
         </main>
       </div>
 
-      {/* Footer Branding */}
       <footer className="bg-white border-t border-gray-200 py-3 px-6 flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
         <div>System: Real-time News Engine</div>
         <div>Focus: Clarity & Logic</div>
@@ -201,4 +202,6 @@ const App = () => {
   );
 };
 
-export default App;
+// 最后一步：渲染组件
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
